@@ -1,5 +1,6 @@
 package tests;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
@@ -17,6 +18,7 @@ public class AvByTests extends BaseTest {
     private final MainPage mainPage = new MainPage();
     private final NissanPage nissanPage = new NissanPage();
 
+    @Tag("SMOKE") // в консоли:    ./gradlew clean myTags -x test -DcustomTags="SMOKE,REGRESS"
     @ParameterizedTest(name = "Проверка правильности перехода на страницу автобренда {1} после нажатия кнопки {0}")
     @CsvSource({
             "Ford, ford",
@@ -37,23 +39,34 @@ public class AvByTests extends BaseTest {
                 .checkingSearchResultIsNotEmpty();
     }
 
+    @ParameterizedTest(name = "Проверка того, что есть авто модели {0} c ценой не более {1}")
+    @CsvSource({
+            "X-Trail, 70000",
+            "Qashqai, 40000",
+            "Leaf, 25000"
+    })
+    public void checkingPrise(String model, int prise) {
+        nissanPage.openPage()
+                .selectModel(model);
+        assertTrue(nissanPage.ifThereIsLowerPrice(prise));
+    }
+
     static class DataProvider implements ArgumentsProvider {
         @Override
         public Stream<? extends Arguments> provideArguments(ExtensionContext extensionContext) throws Exception {
             return Stream.of(
-                    Arguments.of("X-Trail", List.of("Минск", "Гродно"), 70000),
-                    Arguments.of("Qashqai", List.of("Гомель", "Брест"), 40000),
-                    Arguments.of("Leaf", List.of("Гродно", "Могилев"), 25000)
+                    Arguments.of("X-Trail", List.of("Минск", "Гродно")),
+                    Arguments.of("Qashqai", List.of("Минск", "Брест")),
+                    Arguments.of("Leaf", List.of("Минск", "Гомель"))
             );
         }
     }
-
-    @ParameterizedTest(name = "Проверка того, что в заданном месте {1} есть авто модели {0} и есть цена не более {2}")
+@Tag("REGRESS")
+    @ParameterizedTest(name = "Проверка того, что в заданном месте {1} есть авто модели {0}")
     @ArgumentsSource(DataProvider.class)
-    public void checkingLocationAndPrise(String model, List<String> location, int prise) {
+    public void checkingLocation(String model, List<String> location) {
         nissanPage.openPage()
                 .selectModel(model)
                 .checkThatCarsAreSoldInTheCityFromTheList(location);
-        assertTrue(nissanPage.ifThereIsLowerPrice(prise));
     }
 }
